@@ -1,0 +1,120 @@
+Instagram is a social networking platform where we can uploads our pictures/ videos and share them with our followers/ friends. We can follow others nd get their feeds too.
+
+so we are going to design a instagram model. Lets start
+
+Requirement:
+1) Functional:
+    a) User can upload pictures and videos
+    b) User should be able to follow others
+    c) user can get the feeds othe followed User.
+    d) user can search the videos/ photos.
+
+2) NOn Functional:
+    a) latency should be low
+    b) system should be highly available.
+    c) it can be eventul consistent. its not necessary upload            picture will be seen to other instantly.
+    d) Reliability: data uploaded should not be lost
+
+Cost Estimation:
+
+    Traffic:
+
+    Lets suppose there are 50 million active User. and suppose there are 5 million uploads per day.( this assumption  you can ask/dsicuss with your inteviewer)
+
+    so per seconds there are  57 uploads
+
+    uploads/sec = 50,00,000/86400 = 57 uploads/sec
+
+    Storage:
+
+    Lets suppose a image id of 200 KB and there are 5 million uoloads per day.
+    therefore total storage needed woukd be : 5  * 10 ^6 * 2 * 10 ^5 =1 TB
+
+    So we need 1 Tb of storage every day and there would be 57 uploads per second.
+
+
+API Endpoints :
+
+    1. Uploads:
+            POST:/ image
+            Request:
+                {
+                    image: multipartFile
+                    title : string
+                }
+            Response:
+                {
+                    imageId:string
+                }
+    2. Follow User:
+            POST :/follow/{followid}
+    3. Get Feed :
+            GET :/feed?limit = {limit}
+            Request :
+                {
+                    item: itemList[]
+                }
+            Response:
+                {
+                    imageid: string
+                    title: string
+                    imageurl: string
+                }
+    4. search:
+            GET:/ search/{serachID}
+            Request :
+                {
+                    item: itemList[]
+                }
+            Response:
+                {
+                    imageid: string
+                    title: string
+                    imageurl: string
+                }
+
+
+Design Consideration:
+    1) Data Storage for Images: As our system is read heavy With 50 million active users and only 5 million users uploading images, you have a large proportion of users who are primarily reading data (90% reading, 10% writing). This indicates that the majority of operations on the system involve reading images rather than writing them, which aligns with the characteristics of a read-heavy system.
+
+    we also have to consider these points:
+        1) System should be reliable( user uploaded image should be lost at any cost).
+        2) User can upload any number of images and videos
+        3) Latency should be low while viewing
+
+    considreing all these point we can go AWS S3.
+
+    2) Data Storage for User Data: while storing data we should consider these points
+        1) user data should be highly availble
+        2) Data should be scable
+        3) Low latency
+        4) DB should be reliable and supports Sharding.
+
+    considering all above points we have Dynamo DB.
+
+
+
+    Pictorial Diagram:
+
+    1) for loading images :
+
+    client >>---loadImage---api>> CloudFront 
+    
+    (CDN) >>S3 Bucket( we get image url fron iage service which directly access iamge DDB)
+
+    2) for upload image :
+
+    client >---upload image---> Load balancer( scalability) >> image service >> Image DDB 
+
+    image service>> s3 ( scalable)
+
+    image service >> sns > sqs> feed generation service
+
+
+    3) for getting feeds :
+
+    client  >>---getfeed--->>feed genetaion service >>Feed DB
+
+    we can insert redis cache for storing feeds.( low latency)
+
+
